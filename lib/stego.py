@@ -8,7 +8,9 @@ JPEG_ENCODING_START_POS = 10000
 class FileFormat(Enum):
 	JPEG = 1
 
-
+###########################################################
+# TODO switch to PIL and encode in the pixel color values #
+###########################################################
 class StegoWriter:
 
 	def __init__(self, imgFile, fileFormat, message=""):
