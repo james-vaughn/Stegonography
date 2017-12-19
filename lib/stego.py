@@ -1,4 +1,6 @@
 from enum import Enum
+from PIL import Image
+
 
 SIZE_OF_BYTE = 8
 
@@ -81,3 +83,8 @@ class StegoWriter:
 		return bitArray
 
 
+# try:
+# 	x = Image.open(file)
+# except IOError:
+# 	pass
+# pixels = Image.getdata()
