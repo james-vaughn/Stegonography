@@ -58,7 +58,7 @@ class StegoEncoder:
 
 				bits.append(pixel[0] & 0x01)
 
-				if len(bits) == 8:
+				if len(bits) == SIZE_OF_BYTE:
 					
 					byte = StegoEncoder.bitArrayToByte(bits)
 
@@ -85,7 +85,7 @@ class StegoEncoder:
 		Also clears the bit array in the process."""
 
 		byte = 0x00
-		for _ in range(8):
+		for _ in range(SIZE_OF_BYTE):
 			byte = (byte << 1) | arr.pop(0)
 
 		return byte
