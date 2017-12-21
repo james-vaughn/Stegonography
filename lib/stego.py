@@ -13,7 +13,7 @@ class StegoEncoder:
 	# Save the new stego image to disk at the given filename
 	def write(self, outputFilename):
 		if self.stegoImage is None:
-			self.prepare()
+			self.encode()
 
 		self.stegoImage.save(outputFilename)
 
