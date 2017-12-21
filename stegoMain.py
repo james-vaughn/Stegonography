@@ -1,9 +1,12 @@
-from lib.stego import FileFormat, StegoWriter
+from lib.stego import StegoEncoder
 
 
-stegoWriter = StegoWriter(imgFile = "InputImages/fate.jpeg", fileFormat = FileFormat.JPEG, message = "hello, world")
+stegoWriter = StegoEncoder(imgFile = "InputImages/fate_png.png")
 
 # Can prepare the output ahead of time
-stegoWriter.prepare()
+stegoWriter.encode(message = "hello, world")
 
-stegoWriter.write("OutputImages/fateOut.jpeg")
+stegoWriter.write("OutputImages/fate_png_out.png")
+
+stegoReader = StegoEncoder(imgFile = "OutputImages/fate_png_out.png")
+print(stegoReader.decode())

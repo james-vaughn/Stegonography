@@ -1,76 +1,72 @@
-from enum import Enum
 from PIL import Image
-
 
 SIZE_OF_BYTE = 8
 
-JPEG_ENCODING_START_POS = 10000
 
-# File formats which can be accepted by the stego writer
-class FileFormat(Enum):
-	JPEG = 1
+class StegoEncoder:
 
-###########################################################
-# TODO switch to PIL and encode in the pixel color values #
-###########################################################
-class StegoWriter:
-
-	def __init__(self, imgFile, fileFormat, message=""):
-		assert(isinstance(fileFormat, FileFormat))
-
+	def __init__(self, imgFile):
 		self.imgFile = imgFile
-		self.fileFormat = fileFormat
-		self.message = message
-		self.stegoImgBytes = None
-
-	# returns the bytes of an input image
-	def _getImgBytes(self):
-		with open(self.imgFile, "rb") as imageFile:
-			f = imageFile.read()
-			bytes = bytearray(f)
-
-		return bytes	
+		self.stegoImage = None
 
 
+	# Save the new stego image to disk at the given filename
 	def write(self, outputFilename):
-		if self.stegoImgBytes is None:
+		if self.stegoImage is None:
 			self.prepare()
 
-		with open(outputFilename, "wb") as outputFile:
-			outputFile.write(bytearray(self.stegoImgBytes))
+		self.stegoImage.save(outputFilename)
 
 
 	# creates the output image bytes so that we can write the image later
-	def prepare(self):
-		if self.fileFormat == FileFormat.JPEG:
-			self._prepareJPEG()
-
-
-	def _prepareJPEG(self):
-		imgBytes = self._getImgBytes()
+	def encode(self, message = ""):
+		self.stegoImage = Image.open(self.imgFile)
+		pixels = self.stegoImage.load()
 
 		# encode into ascii byte string
-		messageBytes = self.message.encode("ASCII") 
+		messageBytes = bytes(message + "\0", "ASCII")
 
-		if len(imgBytes) - JPEG_ENCODING_START_POS < len(messageBytes) * SIZE_OF_BYTE:
-			raise Exception("Image is not large enough to encode the message.")
+		# if len(imgBytes) * len(imgBytes[0]) < len(messageBytes) * SIZE_OF_BYTE:
+		# 	raise Exception("Image is not large enough to encode the message.")
 
-		stegoImg = imgBytes[0:JPEG_ENCODING_START_POS]
-		imgBytes = imgBytes[JPEG_ENCODING_START_POS:]
+		pixel_x, pixel_y = 0, 0
 
 		for byte in messageBytes:
-			for bit in StegoWriter.byteToBitArray(byte):
+			for bit in StegoEncoder.byteToBitArray(byte):
 				# set the last bit of the image byte to the bit to encode
-				oldByte = imgBytes.pop(0)
-				stegoByte = (oldByte & 0xFE) | bit
-				stegoImg.append(stegoByte)
+				oldPixel = pixels[pixel_x, pixel_y]
+				pixels[pixel_x, pixel_y] = ((oldPixel[0] & 0xFE) | bit, oldPixel[1], oldPixel[2])
 				
-				# print("Old byte: {}\tNew Byte: {}\tEncoded bit: {}".format(oldByte, stegoByte, bit))
+				pixel_x += 1
 
-		# Fill in the rest of the image bytes that don't have a message
-		stegoImg += imgBytes[:]
+				if pixel_x >= self.stegoImage.width:
+					pixel_x = 0
+					pixel_y += 1
 
-		self.stegoImgBytes = stegoImg
+
+	def decode(self):
+		message = ""
+
+		img = Image.open(self.imgFile)
+		pixels = img.load()
+
+		bits = []
+
+		for y in range(img.height):
+			for x in range(img.width):
+				pixel = pixels[x, y]
+
+				bits.append(pixel[0] & 0x01)
+
+				if len(bits) == 8:
+					
+					byte = StegoEncoder.bitArrayToByte(bits)
+
+					char = chr(byte)
+					if char == "\0":
+						return message
+					else:
+						message += char
 
 
 	# Converts a given byte into its equivalent bit array
@@ -83,8 +79,13 @@ class StegoWriter:
 		return bitArray
 
 
-# try:
-# 	x = Image.open(file)
-# except IOError:
-# 	pass
-# pixels = Image.getdata()
+	@staticmethod
+	def bitArrayToByte(arr):
+		"""Returns the byte represented by the bit array.
+		Also clears the bit array in the process."""
+
+		byte = 0x00
+		for _ in range(8):
+			byte = (byte << 1) | arr.pop(0)
+
+		return byte
